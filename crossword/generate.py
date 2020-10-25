@@ -1,7 +1,8 @@
 import sys
-
+import random
 from crossword import *
 from collections import deque
+
 
 class CrosswordCreator():
 
@@ -238,7 +239,7 @@ The function should return True if a revision was made to the domain of x; it sh
                     return False
                 # todo: add more arcs to queue
                 for neighbor in self.crossword.neighbors(node):
-                    if neighbor != arc[1]:
+                    if neighbor != arc[0] and neighbor != arc[1]:
                         arcs.append((arc[0], neighbor))
                         print(f"arcs: {arcs}")
 
@@ -259,7 +260,9 @@ An assignment is complete if every crossword variable is assigned to a value (re
 The function should return True if the assignment is complete and return False otherwise.
         """
         print(f"assignment_complete({assignment})")
-        raise NotImplementedError
+        if len(assignment) == len(self.crossword.variables):
+            return True
+        return False
 
     def consistent(self, assignment):
         """
@@ -274,6 +277,10 @@ An assignment is a dictionary where the keys are Variable objects and the values
 An assignment is consistent if it satisfies all of the constraints of the problem: that is to say, all values are distinct, every value is the correct length, and there are no conflicts between neighboring variables.
 The function should return True if the assignment is consistent and return False otherwise.
         """
+        print(f"consistent({assignment})")
+        # TODO: no word used more than once!
+        # TODO: are all nodes consistent in this assignment?
+        # TODO: are you edge consistent?
         raise NotImplementedError
 
     def order_domain_values(self, var, assignment):
@@ -318,7 +325,15 @@ It may be helpful to first implement this function by returning any arbitrary un
 You may find it helpful to sort a list according to a particular key: Python contains some helpful functions for achieving this.
         """
         print(f"select_unassigned_variable({assignment})")
-        raise NotImplementedError
+
+        variables_not_in_assigment = set()
+        for variable in self.crossword.variables:
+            if variable not in assignment:
+                variables_not_in_assigment.add(variable)
+
+        choice = random.choice(list(variables_not_in_assigment))
+        print("choice: ", choice)
+        return choice
 
     def backtrack(self, assignment):
         """
@@ -335,15 +350,48 @@ You may find it helpful to sort a list according to a particular key: Python con
         TODO
         The backtrack function should accept a partial assignment assignment as input and, using backtracking search, return a complete satisfactory assignment of variables to values if it is possible to do so.
 
-An assignment is a dictionary where the keys are Variable objects and the values are strings representing the words those variables will take on. The input assignment may not be complete (not all variables will necessarily have values).
-If it is possible to generate a satisfactory crossword puzzle, your function should return the complete assignment: a dictionary where each variable is a key and the value is the word that the variable should take on. If no satisfying assignment is possible, the function should return None.
-If you would like, you may find that your algorithm is more efficient if you interleave search with inference (as by maintaining arc consistency every time you make a new assignment). You are not required to do this, but you are permitted to, so long as your function still produces correct results. (It is for this reason that the ac3 function allows an arcs argument, in case you’d like to start with a different queue of arcs.)
+An assignment is a dictionary where the keys are Variable objects and the values are strings representing the words those variables will take on. 
+The input assignment may not be complete (not all variables will necessarily have values).
+
+If it is possible to generate a satisfactory crossword puzzle, your function should return the complete assignment: 
+a dictionary where each variable is a key and the value is the word that the variable should take on.
+If no satisfying assignment is possible, the function should return None.
+If you would like, you may find that your algorithm is more efficient if you interleave search with inference (as by maintaining arc consistency every time you make a new assignment).
+You are not required to do this, but you are permitted to,
+so long as your function still produces correct results. (It is for this reason that the ac3 function allows an arcs argument, in case you’d like to start with a different queue of arcs.)
+
+        """
+        """
+        pseudocode:
+        
+        if assignment complete: return assignment
+        var = select-unsassigned-var(assignment, csp)
+        for value in Domain-values(var, assignment, csp):
+            if value consistent with assignment:
+                add {var = value} to assignment
+                result = backtrack(assignment, csp)
+                if result != failure: return result
+            remove {var = value} from assignment
+        return failure
 
         """
         print(f"backtrack({assignment})")
-        print("domains: ", self.domains)
+        # print("domains: ", self.domains)
+        if self.assignment_complete(assignment):
+            return assignment
+        print("assignment not complete")
+        # Try a new variable:
+        variable = self.select_unassigned_variable(assignment)
+        for value in self.domains[variable]:
+            if value not in assignment:
+                assignment[variable] = value
+                result = self.backtrack(assignment)
+                if self.assignment_complete(assignment) and self.consistent(assignment):
+                    return result
+            assignment.pop(variable)
 
-        raise NotImplementedError
+
+        return None
 
 
 def main():
