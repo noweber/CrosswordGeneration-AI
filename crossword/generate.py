@@ -1,7 +1,7 @@
 import sys
 
 from crossword import *
-
+from collections import deque
 
 class CrosswordCreator():
 
@@ -89,16 +89,6 @@ class CrosswordCreator():
         """
         Enforce node and arc consistency, and then solve the CSP.
         """
-        """
-        TODO
-        This function does three things:
-        first, it calls enforce_node_consistency to enforce node consistency on the crossword puzzle,
-        ensuring that every value in a variable’s domain satisfy the unary constraints.
-        Next, the function calls ac3 to enforce arc consistency,
-        ensuring that binary constraints are satisfied. Finally,
-        the function calls backtrack on an initially empty assignment (the empty dictionary dict())
-        to try to calculate a solution to the problem.
-        """
         self.enforce_node_consistency()
         self.ac3()
         return self.backtrack(dict())
@@ -110,6 +100,8 @@ class CrosswordCreator():
          constraints; in this case, the length of the word.)
         """
         """
+        TODO: Make sure the words fit into their slots
+        TODO: ensuring that every value in a variable’s domain satisfy the unary constraints.
         TODO
         The enforce_node_consistency function should update self.domains such that each variable is node consistent.
 
@@ -117,7 +109,17 @@ Recall that node consistency is achieved when, for every variable, each value in
 To remove a value x from the domain of a variable v, since self.domains is a dictionary mapping variables to sets of values, you can call self.domains[v].remove(x).
 No return value is necessary for this function.
         """
-        raise NotImplementedError
+        print("enforce_node_consistency()")
+        # TODO: optimize
+        
+       # print("domains: ", self.domains)
+        for variable in self.crossword.variables:
+            for word in self.domains[variable].copy():
+                if len(word) != variable.length:
+                    # print("before: ", self.domains[variable])
+                    self.domains[variable].discard(word)
+                    # print("after: ", self.domains[variable])
+        #print("domains: ", self.domains)
 
     def revise(self, x, y):
         """
@@ -139,7 +141,63 @@ Recall that you can access self.crossword.overlaps to get the overlap, if any, b
 The domain of y should be left unmodified.
 The function should return True if a revision was made to the domain of x; it should return False if no revision was made.
         """
-        raise NotImplementedError
+        """pseudocode
+        revised = false
+        for x in X.domain:
+            if no y in Y.domain satisfies constraint for (X, Y):
+                delete x from X.domain
+                revise = true
+        return revised
+
+
+        """
+        if x == y:
+            print("nodes are the same")
+            return False
+        # TODO: optimize
+        #print(f"revise({x}, {y})")
+
+        #print("x: ", self.domains[x])
+        #print("y: ", self.domains[y])
+
+        x_y_intersecting_cells = set(x.cells).intersection(set(y.cells))
+        if len(x_y_intersecting_cells) == 0:
+            print("no intersection")
+            return False
+        #print("intersecting cells: ", x_y_intersecting_cells)
+
+        revised = False
+        for x_word in self.domains[x].copy():
+
+            # Create a mapping of each cell in the variable 'x' to the characters in this word in O(n):
+            cell_to_character_map_x = {}
+            for i in range(len(x.cells)):
+                if x.cells[i] in x_y_intersecting_cells:
+                    cell_to_character_map_x[x.cells[i]] = x_word[i]
+            
+            #print("x_word", x_word)
+            #print("cell_to_character_map_x", cell_to_character_map_x)
+
+            remove_word_from_x_domain = True
+            for y_word in self.domains[y]:
+                
+                # Check if words satisfy constraints
+                for i in range(len(y.cells)):
+                    if y.cells[i] in x.cells:
+                        #print("intersecting cell: ", y.cells[i])
+                        #print("x value: ", cell_to_character_map_x[y.cells[i]])
+                        #print("y value: ", y_word[i])
+                        if cell_to_character_map_x[y.cells[i]] != y_word[i]:
+                            #print("not consistent")
+                            break
+                    if i == len(y.cells) - 1:
+                        #print(f"words match: {x_word} {y_word}")
+                        remove_word_from_x_domain = False
+            if remove_word_from_x_domain:
+                self.domains[x].discard(x_word)
+                revised = True
+        #print("x after: ", self.domains[x])
+        return revised
 
     def ac3(self, arcs=None):
         """
@@ -151,16 +209,40 @@ The function should return True if a revision was made to the domain of x; it sh
         return False if one or more domains end up empty.
         """
         """
-        TODO
+        TODO: probably needs to use neighbors call
+        TODO: works with revise to guarantee the binary constraints... this function should call revise
+        TODO: enforce arc consistency, ensuring that binary constraints are satisfied.
+        TODO:
         The ac3 function should, using the AC3 algorithm, enforce arc consistency on the problem. Recall that arc consistency is achieved when all the values in each variable’s domain satisfy that variable’s binary constraints.
-
-Recall that the AC3 algorithm maintains a queue of arcs to process. This function takes an optional argument called arcs, representing an initial list of arcs to process. If arcs is None, your function should start with an initial queue of all of the arcs in the problem. Otherwise, your algorithm should begin with an initial queue of only the arcs that are in the list arcs (where each arc is a tuple (x, y) of a variable x and a different variable y).
-Recall that to implement AC3, you’ll revise each arc in the queue one at a time. Any time you make a change to a domain, though, you may need to add additional arcs to your queue to ensure that other arcs stay consistent.
-You may find it helpful to call on the revise function in your implementation of ac3.
-If, in the process of enforcing arc consistency, you remove all of the remaining values from a domain, return False (this means it’s impossible to solve the problem, since there are no more possible values for the variable). Otherwise, return True.
-You do not need to worry about enforcing word uniqueness in this function (you’ll implement that check in the consistent function.)
+        Recall that the AC3 algorithm maintains a queue of arcs to process. This function takes an optional argument called arcs, representing an initial list of arcs to process. If arcs is None, your function should start with an initial queue of all of the arcs in the problem. Otherwise, your algorithm should begin with an initial queue of only the arcs that are in the list arcs (where each arc is a tuple (x, y) of a variable x and a different variable y).
+        Recall that to implement AC3, you’ll revise each arc in the queue one at a time. Any time you make a change to a domain, though, you may need to add additional arcs to your queue to ensure that other arcs stay consistent.
+        You may find it helpful to call on the revise function in your implementation of ac3.
+        If, in the process of enforcing arc consistency, you remove all of the remaining values from a domain, return False (this means it’s impossible to solve the problem, since there are no more possible values for the variable). Otherwise, return True.
+        You do not need to worry about enforcing word uniqueness in this function (you’ll implement that check in the consistent function.)
         """
-        raise NotImplementedError
+        print(f"ac3({arcs})")
+        # TODO: optimize by caching neighbors
+        if arcs is None:
+            arcs = deque()
+            for node in self.crossword.variables:
+                for neighbor in self.crossword.neighbors(node):
+                    arc = (node, neighbor)
+                    arcs.append(arc)
+        
+        print(f"arcs: {arcs}")
+
+        while arcs:
+            arc = arcs.popleft()
+            if self.revise(arc[0], arc[1]):
+                if len(self.domains[arc[0]]) == 0:
+                    return False
+                # todo: add more arcs to queue
+                for neighbor in self.crossword.neighbors(node):
+                    if neighbor != arc[1]:
+                        arcs.append((arc[0], neighbor))
+                        print(f"arcs: {arcs}")
+
+        return True
 
     def assignment_complete(self, assignment):
         """
@@ -168,6 +250,7 @@ You do not need to worry about enforcing word uniqueness in this function (you�
         crossword variable); return False otherwise.
         """
         """
+        TODO: this might just be a one-liner
         TODO
         The assignment_complete function should (as the name suggests) check to see if a given assignment is complete.
 
@@ -175,6 +258,7 @@ An assignment is a dictionary where the keys are Variable objects and the values
 An assignment is complete if every crossword variable is assigned to a value (regardless of what that value is).
 The function should return True if the assignment is complete and return False otherwise.
         """
+        print(f"assignment_complete({assignment})")
         raise NotImplementedError
 
     def consistent(self, assignment):
@@ -200,6 +284,7 @@ The function should return True if the assignment is consistent and return False
         that rules out the fewest values among the neighbors of `var`.
         """
         """
+        # TODO: this is a heuristic one
         TODO
         The order_domain_values function should return a list of all of the values in the domain of var, ordered according to the least-constraining values heuristic.
 
@@ -211,6 +296,7 @@ Recall that you can access self.crossword.overlaps to get the overlap, if any, b
 It may be helpful to first implement this function by returning a list of values in any arbitrary order (which should still generate correct crossword puzzles). Once your algorithm is working, you can then go back and ensure that the values are returned in the correct order.
 You may find it helpful to sort a list according to a particular key: Python contains some helpful functions for achieving this.
         """
+        print(f"order_domain_values({var}, {assignment})")
         raise NotImplementedError
 
     def select_unassigned_variable(self, assignment):
@@ -222,6 +308,7 @@ You may find it helpful to sort a list according to a particular key: Python con
         return values.
         """
         """
+        # TODO: this is a heuristic one
         TODO
         The select_unassigned_variable function should return a single variable in the crossword puzzle that is not yet assigned by assignment, according to the minimum remaining value heuristic and then the degree heuristic.
 
@@ -230,6 +317,7 @@ Your function should return a Variable object. You should return the variable wi
 It may be helpful to first implement this function by returning any arbitrary unassigned variable (which should still generate correct crossword puzzles). Once your algorithm is working, you can then go back and ensure that you are returning a variable according to the heuristics.
 You may find it helpful to sort a list according to a particular key: Python contains some helpful functions for achieving this.
         """
+        print(f"select_unassigned_variable({assignment})")
         raise NotImplementedError
 
     def backtrack(self, assignment):
@@ -242,6 +330,8 @@ You may find it helpful to sort a list according to a particular key: Python con
         If no assignment is possible, return None.
         """
         """
+        TODO: this is a recursive call... uses backtracking search.. like a DFS with some constraints because DFS is easy to track backwards
+        TODO: calls backtrack on an initially empty assignment (the empty dictionary dict()) to try to calculate a solution to the problem.
         TODO
         The backtrack function should accept a partial assignment assignment as input and, using backtracking search, return a complete satisfactory assignment of variables to values if it is possible to do so.
 
@@ -250,6 +340,9 @@ If it is possible to generate a satisfactory crossword puzzle, your function sho
 If you would like, you may find that your algorithm is more efficient if you interleave search with inference (as by maintaining arc consistency every time you make a new assignment). You are not required to do this, but you are permitted to, so long as your function still produces correct results. (It is for this reason that the ac3 function allows an arcs argument, in case you’d like to start with a different queue of arcs.)
 
         """
+        print(f"backtrack({assignment})")
+        print("domains: ", self.domains)
+
         raise NotImplementedError
 
 
