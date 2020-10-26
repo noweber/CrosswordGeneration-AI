@@ -100,27 +100,10 @@ class CrosswordCreator():
         (Remove any values that are inconsistent with a variable's unary
          constraints; in this case, the length of the word.)
         """
-        """
-        TODO: Make sure the words fit into their slots
-        TODO: ensuring that every value in a variable’s domain satisfy the unary constraints.
-        TODO
-        The enforce_node_consistency function should update self.domains such that each variable is node consistent.
-
-Recall that node consistency is achieved when, for every variable, each value in its domain is consistent with the variable’s unary constraints. In the case of a crossword puzzle, this means making sure that every value in a variable’s domain has the same number of letters as the variable’s length.
-To remove a value x from the domain of a variable v, since self.domains is a dictionary mapping variables to sets of values, you can call self.domains[v].remove(x).
-No return value is necessary for this function.
-        """
-        print("enforce_node_consistency()")
-        # TODO: optimize
-        
-       # print("domains: ", self.domains)
         for variable in self.crossword.variables:
             for word in self.domains[variable].copy():
                 if len(word) != variable.length:
-                    # print("before: ", self.domains[variable])
                     self.domains[variable].discard(word)
-                    # print("after: ", self.domains[variable])
-        #print("domains: ", self.domains)
 
     def revise(self, x, y):
         """
@@ -153,17 +136,55 @@ The function should return True if a revision was made to the domain of x; it sh
 
         """
         if x == y:
-            print("nodes are the same")
             return False
-        # TODO: optimize
-        #print(f"revise({x}, {y})")
+        
+        overlaps = self.crossword.overlaps[x, y]
+        # print("overlaps: ", overlaps)
+        if overlaps is None:
+            return False
 
-        #print("x: ", self.domains[x])
-        #print("y: ", self.domains[y])
+        # print("before: ", self.domains[x])
+        # print("y: ", self.domains[y])
+        revised = False
+        for word_x in self.domains[x].copy():
+            # print("word_x: ", word_x)
+            has_corresponding_value = False
+            for word_y in self.domains[y]:
+                # print("word_y: ", word_y)
+                # overlaps_length = len(overlaps)
+                # for i in range(overlaps_length):
+                if word_x[overlaps[0]] == word_y[overlaps[1]]:
+                    # print("correspondion")
+                    has_corresponding_value = True
+            if not has_corresponding_value:
+                self.domains[x].discard(word_x)
+                revised = True
+        # print("after: ", self.domains[x])
+        return revised
 
+
+        # print("before: ", self.domains[x])
+        # print("y: ", self.domains[y])
+        # revised = False
+        # for x_word in self.domains[x].copy():
+        #     hypothetical_assignment = {}
+        #     hypothetical_assignment[x] = x_word
+        #     remove_x_word = True
+        #     for y_word in self.domains[y]:
+        #         hypothetical_assignment[y] = y_word
+        #         if not self.do_variable_assignments_conflict(hypothetical_assignment):
+        #             remove_x_word = False
+        #         hypothetical_assignment.pop(y)
+        #     if remove_x_word:
+        #         self.domains[x].discard(x_word)
+        #         revised = True
+        #     hypothetical_assignment.pop(x)
+        # print("after: ", self.domains[x])
+        # return revised
+        
+        """
         x_y_intersecting_cells = set(x.cells).intersection(set(y.cells))
         if len(x_y_intersecting_cells) == 0:
-            print("no intersection")
             return False
         #print("intersecting cells: ", x_y_intersecting_cells)
 
@@ -175,30 +196,21 @@ The function should return True if a revision was made to the domain of x; it sh
             for i in range(len(x.cells)):
                 if x.cells[i] in x_y_intersecting_cells:
                     cell_to_character_map_x[x.cells[i]] = x_word[i]
-            
-            #print("x_word", x_word)
-            #print("cell_to_character_map_x", cell_to_character_map_x)
-
             remove_word_from_x_domain = True
             for y_word in self.domains[y]:
                 
                 # Check if words satisfy constraints
                 for i in range(len(y.cells)):
                     if y.cells[i] in x.cells:
-                        #print("intersecting cell: ", y.cells[i])
-                        #print("x value: ", cell_to_character_map_x[y.cells[i]])
-                        #print("y value: ", y_word[i])
                         if cell_to_character_map_x[y.cells[i]] != y_word[i]:
-                            #print("not consistent")
                             break
                     if i == len(y.cells) - 1:
-                        #print(f"words match: {x_word} {y_word}")
                         remove_word_from_x_domain = False
             if remove_word_from_x_domain:
                 self.domains[x].discard(x_word)
                 revised = True
-        #print("x after: ", self.domains[x])
         return revised
+        """
 
     def ac3(self, arcs=None):
         """
@@ -221,7 +233,7 @@ The function should return True if a revision was made to the domain of x; it sh
         If, in the process of enforcing arc consistency, you remove all of the remaining values from a domain, return False (this means it’s impossible to solve the problem, since there are no more possible values for the variable). Otherwise, return True.
         You do not need to worry about enforcing word uniqueness in this function (you’ll implement that check in the consistent function.)
         """
-        print(f"ac3({arcs})")
+        #print(f"ac3({arcs})")
         # TODO: optimize by caching neighbors
         if arcs is None:
             arcs = deque()
@@ -230,7 +242,7 @@ The function should return True if a revision was made to the domain of x; it sh
                     arc = (node, neighbor)
                     arcs.append(arc)
         
-        print(f"arcs: {arcs}")
+        #print(f"arcs: {arcs}")
 
         while arcs:
             arc = arcs.popleft()
@@ -238,10 +250,10 @@ The function should return True if a revision was made to the domain of x; it sh
                 if len(self.domains[arc[0]]) == 0:
                     return False
                 # todo: add more arcs to queue
-                for neighbor in self.crossword.neighbors(node):
+                for neighbor in self.crossword.neighbors(arc[0]):
                     if neighbor != arc[0] and neighbor != arc[1]:
                         arcs.append((arc[0], neighbor))
-                        print(f"arcs: {arcs}")
+                        # print(f"arcs: {arcs}")
 
         return True
 
@@ -250,16 +262,6 @@ The function should return True if a revision was made to the domain of x; it sh
         Return True if `assignment` is complete (i.e., assigns a value to each
         crossword variable); return False otherwise.
         """
-        """
-        TODO: this might just be a one-liner
-        TODO
-        The assignment_complete function should (as the name suggests) check to see if a given assignment is complete.
-
-An assignment is a dictionary where the keys are Variable objects and the values are strings representing the words those variables will take on.
-An assignment is complete if every crossword variable is assigned to a value (regardless of what that value is).
-The function should return True if the assignment is complete and return False otherwise.
-        """
-        print(f"assignment_complete({assignment})")
         if len(assignment) == len(self.crossword.variables):
             return True
         return False
@@ -277,11 +279,48 @@ An assignment is a dictionary where the keys are Variable objects and the values
 An assignment is consistent if it satisfies all of the constraints of the problem: that is to say, all values are distinct, every value is the correct length, and there are no conflicts between neighboring variables.
 The function should return True if the assignment is consistent and return False otherwise.
         """
-        print(f"consistent({assignment})")
-        # TODO: no word used more than once!
-        # TODO: are all nodes consistent in this assignment?
-        # TODO: are you edge consistent?
-        raise NotImplementedError
+        #print(f"consistent({assignment})")
+        
+        # Check if the assignment is consistent in O(n):
+        assignment_values = set()
+        for variable in assignment:
+
+            # 1) Ensure all values are distinct:
+            if assignment[variable] in assignment_values:
+                return False
+            assignment_values.add(assignment[variable])
+
+            # 2) Ensure every value is the correct length:
+            # Note: this will check the length, direction, and starting point.
+            if variable not in self.crossword.variables:
+                return False
+
+        # 3) Ensure there are no conflicts between neighboring variables:
+        if self.do_variable_assignments_conflict(assignment):
+            return False
+        return True
+
+    def do_variable_assignments_conflict(self, assignment):
+        """
+        TODO
+        """
+        # print(f"do_variable_assignments_conflict({assignment})")
+        crossword_cell_character_map = {}
+        for variable in assignment:
+
+            # Map all of the cells in this variable to the assigned character
+            variable_cell_assignment = {}
+            for i in range(len(variable.cells)):
+                variable_cell_assignment[variable.cells[i]] = assignment[variable][i]
+
+            # Check that all of the cells in this variable match with the total assignment
+            for cell in variable_cell_assignment:
+                if cell in crossword_cell_character_map:
+                        return False
+                else:
+                    crossword_cell_character_map[cell] = variable_cell_assignment[cell]
+        print("crossword_cell_character_map: ", crossword_cell_character_map)
+        return True
 
     def order_domain_values(self, var, assignment):
         """
@@ -324,7 +363,7 @@ Your function should return a Variable object. You should return the variable wi
 It may be helpful to first implement this function by returning any arbitrary unassigned variable (which should still generate correct crossword puzzles). Once your algorithm is working, you can then go back and ensure that you are returning a variable according to the heuristics.
 You may find it helpful to sort a list according to a particular key: Python contains some helpful functions for achieving this.
         """
-        print(f"select_unassigned_variable({assignment})")
+        #print(f"select_unassigned_variable({assignment})")
 
         variables_not_in_assigment = set()
         for variable in self.crossword.variables:
@@ -332,7 +371,7 @@ You may find it helpful to sort a list according to a particular key: Python con
                 variables_not_in_assigment.add(variable)
 
         choice = random.choice(list(variables_not_in_assigment))
-        print("choice: ", choice)
+        #print("choice: ", choice)
         return choice
 
     def backtrack(self, assignment):
@@ -375,21 +414,20 @@ so long as your function still produces correct results. (It is for this reason 
         return failure
 
         """
-        print(f"backtrack({assignment})")
+        # print(f"backtrack({assignment})")
         # print("domains: ", self.domains)
         if self.assignment_complete(assignment):
             return assignment
-        print("assignment not complete")
+        #print("assignment not complete")
         # Try a new variable:
         variable = self.select_unassigned_variable(assignment)
-        for value in self.domains[variable]:
+        for value in self.domains[variable]: # TODO: use order_domain_values here
             if value not in assignment:
                 assignment[variable] = value
                 result = self.backtrack(assignment)
                 if self.assignment_complete(assignment) and self.consistent(assignment):
                     return result
             assignment.pop(variable)
-
 
         return None
 
