@@ -139,29 +139,19 @@ The function should return True if a revision was made to the domain of x; it sh
             return False
         
         overlaps = self.crossword.overlaps[x, y]
-        # print("overlaps: ", overlaps)
         if overlaps is None:
             return False
 
-        # print("before: ", self.domains[x])
-        # print("y: ", self.domains[y])
         revised = False
         for word_x in self.domains[x].copy():
-            # print("word_x: ", word_x)
             has_corresponding_value = False
             for word_y in self.domains[y]:
-                # print("word_y: ", word_y)
-                # overlaps_length = len(overlaps)
-                # for i in range(overlaps_length):
                 if word_x[overlaps[0]] == word_y[overlaps[1]]:
-                    # print("correspondion")
                     has_corresponding_value = True
             if not has_corresponding_value:
                 self.domains[x].discard(word_x)
                 revised = True
-        # print("after: ", self.domains[x])
         return revised
-
 
         # print("before: ", self.domains[x])
         # print("y: ", self.domains[y])
@@ -182,35 +172,6 @@ The function should return True if a revision was made to the domain of x; it sh
         # print("after: ", self.domains[x])
         # return revised
         
-        """
-        x_y_intersecting_cells = set(x.cells).intersection(set(y.cells))
-        if len(x_y_intersecting_cells) == 0:
-            return False
-        #print("intersecting cells: ", x_y_intersecting_cells)
-
-        revised = False
-        for x_word in self.domains[x].copy():
-
-            # Create a mapping of each cell in the variable 'x' to the characters in this word in O(n):
-            cell_to_character_map_x = {}
-            for i in range(len(x.cells)):
-                if x.cells[i] in x_y_intersecting_cells:
-                    cell_to_character_map_x[x.cells[i]] = x_word[i]
-            remove_word_from_x_domain = True
-            for y_word in self.domains[y]:
-                
-                # Check if words satisfy constraints
-                for i in range(len(y.cells)):
-                    if y.cells[i] in x.cells:
-                        if cell_to_character_map_x[y.cells[i]] != y_word[i]:
-                            break
-                    if i == len(y.cells) - 1:
-                        remove_word_from_x_domain = False
-            if remove_word_from_x_domain:
-                self.domains[x].discard(x_word)
-                revised = True
-        return revised
-        """
 
     def ac3(self, arcs=None):
         """
@@ -304,23 +265,14 @@ The function should return True if the assignment is consistent and return False
         """
         TODO
         """
-        # print(f"do_variable_assignments_conflict({assignment})")
-        crossword_cell_character_map = {}
-        for variable in assignment:
-
-            # Map all of the cells in this variable to the assigned character
-            variable_cell_assignment = {}
-            for i in range(len(variable.cells)):
-                variable_cell_assignment[variable.cells[i]] = assignment[variable][i]
-
-            # Check that all of the cells in this variable match with the total assignment
-            for cell in variable_cell_assignment:
-                if cell in crossword_cell_character_map:
-                        return False
-                else:
-                    crossword_cell_character_map[cell] = variable_cell_assignment[cell]
-        print("crossword_cell_character_map: ", crossword_cell_character_map)
-        return True
+        for x in assignment:
+            for y in assignment:
+                if x != y:
+                    overlaps = self.crossword.overlaps[x, y]
+                    if overlaps is not None:
+                        if assignment[x][overlaps[0]] != assignment[y][overlaps[1]]:
+                            return True
+        return False
 
     def order_domain_values(self, var, assignment):
         """
