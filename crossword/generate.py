@@ -142,35 +142,32 @@ The function should return True if a revision was made to the domain of x; it sh
         if overlaps is None:
             return False
 
-        revised = False
-        for word_x in self.domains[x].copy():
-            has_corresponding_value = False
-            for word_y in self.domains[y]:
-                if word_x[overlaps[0]] == word_y[overlaps[1]]:
-                    has_corresponding_value = True
-            if not has_corresponding_value:
-                self.domains[x].discard(word_x)
-                revised = True
-        return revised
-
-        # print("before: ", self.domains[x])
-        # print("y: ", self.domains[y])
         # revised = False
-        # for x_word in self.domains[x].copy():
-        #     hypothetical_assignment = {}
-        #     hypothetical_assignment[x] = x_word
-        #     remove_x_word = True
-        #     for y_word in self.domains[y]:
-        #         hypothetical_assignment[y] = y_word
-        #         if not self.do_variable_assignments_conflict(hypothetical_assignment):
-        #             remove_x_word = False
-        #         hypothetical_assignment.pop(y)
-        #     if remove_x_word:
-        #         self.domains[x].discard(x_word)
+        # for word_x in self.domains[x].copy():
+        #     has_corresponding_value = False
+        #     for word_y in self.domains[y]:
+        #         if word_x[overlaps[0]] == word_y[overlaps[1]]:
+        #             has_corresponding_value = True
+        #     if not has_corresponding_value:
+        #         self.domains[x].discard(word_x)
         #         revised = True
-        #     hypothetical_assignment.pop(x)
-        # print("after: ", self.domains[x])
         # return revised
+
+        revised = False
+        for x_word in self.domains[x].copy():
+            hypothetical_assignment = {}
+            hypothetical_assignment[x] = x_word
+            has_corresponding_value = False
+            for y_word in self.domains[y]:
+                hypothetical_assignment[y] = y_word
+                if not self.do_variable_assignments_conflict(hypothetical_assignment):
+                    has_corresponding_value = True
+                hypothetical_assignment.pop(y)
+            if not has_corresponding_value:
+                self.domains[x].discard(x_word)
+                revised = True
+            hypothetical_assignment.pop(x)
+        return revised
         
 
     def ac3(self, arcs=None):
