@@ -114,44 +114,12 @@ class CrosswordCreator():
         Return True if a revision was made to the domain of `x`; return
         False if no revision was made.
         """
-        """
-        TODO
-        The revise function should make the variable x arc consistent with the variable y.
-
-x and y will both be Variable objects representing variables in the puzzle.
-Recall that x is arc consistent with y when every value in the domain of x has a possible value in the domain of y that does not cause a conflict. (A conflict in the context of the crossword puzzle is a square for which two variables disagree on what character value it should take on.)
-To make x arc consistent with y, you’ll want to remove any value from the domain of x that does not have a corresponding possible value in the domain of y.
-Recall that you can access self.crossword.overlaps to get the overlap, if any, between two variables.
-The domain of y should be left unmodified.
-The function should return True if a revision was made to the domain of x; it should return False if no revision was made.
-        """
-        """pseudocode
-        revised = false
-        for x in X.domain:
-            if no y in Y.domain satisfies constraint for (X, Y):
-                delete x from X.domain
-                revise = true
-        return revised
-
-
-        """
         if x == y:
             return False
         
         overlaps = self.crossword.overlaps[x, y]
         if overlaps is None:
             return False
-
-        # revised = False
-        # for word_x in self.domains[x].copy():
-        #     has_corresponding_value = False
-        #     for word_y in self.domains[y]:
-        #         if word_x[overlaps[0]] == word_y[overlaps[1]]:
-        #             has_corresponding_value = True
-        #     if not has_corresponding_value:
-        #         self.domains[x].discard(word_x)
-        #         revised = True
-        # return revised
 
         revised = False
         for x_word in self.domains[x].copy():
@@ -179,19 +147,6 @@ The function should return True if a revision was made to the domain of x; it sh
         Return True if arc consistency is enforced and no domains are empty;
         return False if one or more domains end up empty.
         """
-        """
-        TODO: probably needs to use neighbors call
-        TODO: works with revise to guarantee the binary constraints... this function should call revise
-        TODO: enforce arc consistency, ensuring that binary constraints are satisfied.
-        TODO:
-        The ac3 function should, using the AC3 algorithm, enforce arc consistency on the problem. Recall that arc consistency is achieved when all the values in each variable’s domain satisfy that variable’s binary constraints.
-        Recall that the AC3 algorithm maintains a queue of arcs to process. This function takes an optional argument called arcs, representing an initial list of arcs to process. If arcs is None, your function should start with an initial queue of all of the arcs in the problem. Otherwise, your algorithm should begin with an initial queue of only the arcs that are in the list arcs (where each arc is a tuple (x, y) of a variable x and a different variable y).
-        Recall that to implement AC3, you’ll revise each arc in the queue one at a time. Any time you make a change to a domain, though, you may need to add additional arcs to your queue to ensure that other arcs stay consistent.
-        You may find it helpful to call on the revise function in your implementation of ac3.
-        If, in the process of enforcing arc consistency, you remove all of the remaining values from a domain, return False (this means it’s impossible to solve the problem, since there are no more possible values for the variable). Otherwise, return True.
-        You do not need to worry about enforcing word uniqueness in this function (you’ll implement that check in the consistent function.)
-        """
-        #print(f"ac3({arcs})")
         # TODO: optimize by caching neighbors
         if arcs is None:
             arcs = deque()
@@ -200,18 +155,14 @@ The function should return True if a revision was made to the domain of x; it sh
                     arc = (node, neighbor)
                     arcs.append(arc)
         
-        #print(f"arcs: {arcs}")
-
         while arcs:
             arc = arcs.popleft()
             if self.revise(arc[0], arc[1]):
                 if len(self.domains[arc[0]]) == 0:
                     return False
-                # todo: add more arcs to queue
                 for neighbor in self.crossword.neighbors(arc[0]):
                     if neighbor != arc[0] and neighbor != arc[1]:
                         arcs.append((arc[0], neighbor))
-                        # print(f"arcs: {arcs}")
 
         return True
 
@@ -229,16 +180,6 @@ The function should return True if a revision was made to the domain of x; it sh
         Return True if `assignment` is consistent (i.e., words fit in crossword
         puzzle without conflicting characters); return False otherwise.
         """
-        """
-        TODO
-        The consistent function should check to see if a given assignment is consistent.
-
-An assignment is a dictionary where the keys are Variable objects and the values are strings representing the words those variables will take on. Note that the assignment may not be complete: not all variables will necessarily be present in the assignment.
-An assignment is consistent if it satisfies all of the constraints of the problem: that is to say, all values are distinct, every value is the correct length, and there are no conflicts between neighboring variables.
-The function should return True if the assignment is consistent and return False otherwise.
-        """
-        #print(f"consistent({assignment})")
-        
         # Check if the assignment is consistent in O(n):
         assignment_values = set()
         for variable in assignment:
@@ -260,7 +201,9 @@ The function should return True if the assignment is consistent and return False
 
     def do_variable_assignments_conflict(self, assignment):
         """
-        TODO
+        Checks the overlap cells between all variables within an assignment to check for conflicting values.
+        Returns True if there are no value conflicts in overlapping cells.
+        Returns False if any assigned variable has a conflicting character with another variable in the same crossword cell.
         """
         for x in assignment:
             for y in assignment:
