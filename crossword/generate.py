@@ -138,7 +138,6 @@ class CrosswordCreator():
             hypothetical_assignment.pop(x)
         return revised
         
-
     def ac3(self, arcs=None):
         """
         Update `self.domains` such that each variable is arc consistent.
@@ -222,47 +221,25 @@ class CrosswordCreator():
         The first value in the list, for example, should be the one
         that rules out the fewest values among the neighbors of `var`.
         """
-        """
-        # TODO: this is a heuristic one
-        TODO
-        The order_domain_values function should return a list of all of the values in the domain of var, ordered according to the least-constraining values heuristic.
 
-var will be a Variable object, representing a variable in the puzzle.
-Recall that the least-constraining values heuristic is computed as the number of values ruled out for neighboring unassigned variables. That is to say, if assigning var to a particular value results in eliminating n possible choices for neighboring variables, you should order your results in ascending order of n.
-Note that any variable present in assignment already has a value, and therefore shouldn’t be counted when computing the number of values ruled out for neighboring unassigned variables.
-For domain values that eliminate the same number of possible choices for neighboring variables, any ordering is acceptable.
-Recall that you can access self.crossword.overlaps to get the overlap, if any, between two variables.
-It may be helpful to first implement this function by returning a list of values in any arbitrary order (which should still generate correct crossword puzzles). Once your algorithm is working, you can then go back and ensure that the values are returned in the correct order.
-You may find it helpful to sort a list according to a particular key: Python contains some helpful functions for achieving this.
-        """
-        # TODO: Validate input??
-        # TODO: use the assignment???
-        
         # Use a min heap to keep the heuristically sorted variables in ascending order
         # Each entry in the heap is of the form (number of values ruled out, variable) for sorting
         values_heap = []
-        # print("domain: ", self.domains[var])
 
-        
         for value in self.domains[var]:
             values_ruled_out_for_neighbors = 0
-            # print("value: ", value)
+
             for neighbor in self.crossword.neighbors(var):
-                
-                # print("neighbor domain: ", self.domains[neighbor])
-                if value in self.domains[neighbor]:
+
+                if neighbor not in assignment and value in self.domains[neighbor]:
                     values_ruled_out_for_neighbors += 1
-            
-            # print("values_ruled_out_for_neighbors: ", values_ruled_out_for_neighbors)
+
             heapq.heappush(values_heap, (values_ruled_out_for_neighbors, value))
             heapq.heapify(values_heap)
-        
-        
-        # print("values_heap: ", values_heap)
+
         ordered_domain_values = []
-        for i in range(len(values_heap)):
-            ordered_domain_values.append(values_heap[i][1])
-        # print("ordered_domain_values: ", ordered_domain_values)
+        while values_heap:
+            ordered_domain_values.append(heapq.heappop(values_heap)[1])
         return ordered_domain_values
 
     def select_unassigned_variable(self, assignment):
