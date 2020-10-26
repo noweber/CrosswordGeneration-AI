@@ -1,5 +1,6 @@
 import sys
 import random
+import heapq
 from crossword import *
 from collections import deque
 
@@ -234,14 +235,34 @@ Recall that you can access self.crossword.overlaps to get the overlap, if any, b
 It may be helpful to first implement this function by returning a list of values in any arbitrary order (which should still generate correct crossword puzzles). Once your algorithm is working, you can then go back and ensure that the values are returned in the correct order.
 You may find it helpful to sort a list according to a particular key: Python contains some helpful functions for achieving this.
         """
-        # print(f"order_domain_values({var}, {assignment})")
-        print(f"order_domain_values({var})")
-        ordered_domain_values = []
-        # print("domain: ", self.domains[var])
-        for value in self.domains[var]:
-            ordered_domain_values.append(value)
+        # TODO: Validate input??
+        # TODO: use the assignment???
         
-        print("ordered_domain_values: ", ordered_domain_values)
+        # Use a min heap to keep the heuristically sorted variables in ascending order
+        # Each entry in the heap is of the form (number of values ruled out, variable) for sorting
+        values_heap = []
+        # print("domain: ", self.domains[var])
+
+        
+        for value in self.domains[var]:
+            values_ruled_out_for_neighbors = 0
+            # print("value: ", value)
+            for neighbor in self.crossword.neighbors(var):
+                
+                # print("neighbor domain: ", self.domains[neighbor])
+                if value in self.domains[neighbor]:
+                    values_ruled_out_for_neighbors += 1
+            
+            # print("values_ruled_out_for_neighbors: ", values_ruled_out_for_neighbors)
+            heapq.heappush(values_heap, (values_ruled_out_for_neighbors, value))
+            heapq.heapify(values_heap)
+        
+        
+        # print("values_heap: ", values_heap)
+        ordered_domain_values = []
+        for i in range(len(values_heap)):
+            ordered_domain_values.append(values_heap[i][1])
+        # print("ordered_domain_values: ", ordered_domain_values)
         return ordered_domain_values
 
     def select_unassigned_variable(self, assignment):
