@@ -124,14 +124,22 @@ class CrosswordCreator():
 
         revised = False
         for x_word in self.domains[x].copy():
+
+            # Create a hypothetical assignment with the word from x's domain:
             hypothetical_assignment = {}
             hypothetical_assignment[x] = x_word
             has_corresponding_value = False
             for y_word in self.domains[y]:
+
+                # Add the word from y's domain to the hypothetical assignment then use shared code to check overlaps for conflict.
                 hypothetical_assignment[y] = y_word
+
+                # Use the shared function to check if there is an assignment conflict.
                 if not self.do_variable_assignments_conflict(hypothetical_assignment):
                     has_corresponding_value = True
+
                 hypothetical_assignment.pop(y)
+                
             if not has_corresponding_value:
                 self.domains[x].discard(x_word)
                 revised = True
@@ -277,7 +285,7 @@ class CrosswordCreator():
         while remaining_value_min_heap:
             potential_tie = heapq.heappop(remaining_value_min_heap)
             if potential_tie[0] == min_remaining_variables[0][0]:
-                 min_remaining_variables.append(potential_tie)
+                min_remaining_variables.append(potential_tie)
 
         # If there are no ties for the fewest remaining variables, just return the min:
         if len(min_remaining_variables) == 1:
@@ -318,6 +326,7 @@ class CrosswordCreator():
             assignment.pop(variable)
 
         return None
+
 
 def main():
 
