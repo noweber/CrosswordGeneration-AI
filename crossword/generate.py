@@ -147,7 +147,6 @@ class CrosswordCreator():
         Return True if arc consistency is enforced and no domains are empty;
         return False if one or more domains end up empty.
         """
-        # TODO: optimize by caching neighbors
         if arcs is None:
             arcs = deque()
             for node in self.crossword.variables:
@@ -202,6 +201,7 @@ class CrosswordCreator():
     def do_variable_assignments_conflict(self, assignment):
         """
         Checks the overlap cells between all variables within an assignment to check for conflicting values.
+        This method is used for checking solution consistency in complete or incomplete assignments.
         Returns True if there are no value conflicts in overlapping cells.
         Returns False if any assigned variable has a conflicting character with another variable in the same crossword cell.
         """
@@ -235,7 +235,6 @@ class CrosswordCreator():
                     values_ruled_out_for_neighbors += 1
 
             heapq.heappush(values_heap, (values_ruled_out_for_neighbors, value))
-            heapq.heapify(values_heap)
 
         ordered_domain_values = []
         while values_heap:
@@ -250,26 +249,45 @@ class CrosswordCreator():
         degree. If there is a tie, any of the tied variables are acceptable
         return values.
         """
-        """
-        # TODO: this is a heuristic one
-        TODO
-        The select_unassigned_variable function should return a single variable in the crossword puzzle that is not yet assigned by assignment, according to the minimum remaining value heuristic and then the degree heuristic.
-
-An assignment is a dictionary where the keys are Variable objects and the values are strings representing the words those variables will take on. You may assume that the assignment will not be complete: not all variables will be present in the assignment.
-Your function should return a Variable object. You should return the variable with the fewest number of remaining values in its domain. If there is a tie between variables, you should choose among whichever among those variables has the largest degree (has the most neighbors). If there is a tie in both cases, you may choose arbitrarily among tied variables.
-It may be helpful to first implement this function by returning any arbitrary unassigned variable (which should still generate correct crossword puzzles). Once your algorithm is working, you can then go back and ensure that you are returning a variable according to the heuristics.
-You may find it helpful to sort a list according to a particular key: Python contains some helpful functions for achieving this.
-        """
-        #print(f"select_unassigned_variable({assignment})")
-
-        variables_not_in_assigment = set()
+        unassigned = []
         for variable in self.crossword.variables:
             if variable not in assignment:
-                variables_not_in_assigment.add(variable)
+                unassigned.append(variable)
 
-        choice = random.choice(list(variables_not_in_assigment))
-        #print("choice: ", choice)
-        return choice
+        unassigned_length = len(unassigned)
+        if unassigned_length == 0:
+            return None
+
+        remaining_value_min_heap = []
+        for i in range(unassigned_length):
+            variable = unassigned[i]
+            remaining_values = len(self.domains[variable])
+            degree = len(self.crossword.neighbors(variable))
+            heapq.heappush(remaining_value_min_heap, (remaining_values, degree, i))
+
+        # Create a list of all the variables which tie for the fewest number of remaining values:
+        min_remaining_variables = []
+        min_remaining_variables.append(heapq.heappop(remaining_value_min_heap))
+        while remaining_value_min_heap:
+            potential_tie = heapq.heappop(remaining_value_min_heap)
+            if potential_tie[0] == min_remaining_variables[0][0]:
+                 min_remaining_variables.append(potential_tie)
+        if len(min_remaining_variables) == 1:
+            return unassigned[min_remaining_variables[0][2]]
+
+        # Of the variables tied for the fewuest remaining values, select one tied for the highest degree:
+        highest_degree_variable = None
+        for i in range(len(min_remaining_variables)):
+            if highest_degree_variable is None:
+                highest_degree_variable = min_remaining_variables[i]
+            else:
+                if min_remaining_variables[i][1] > highest_degree_variable[1]:
+                    highest_degree_variable = min_remaining_variables[i]
+                elif min_remaining_variables[i][1] == highest_degree_variable[1]:
+                    # Randomly choose one of these two
+                    if random.randint(0, 1) == 1:
+                        highest_degree_variable = min_remaining_variables[i]
+        return unassigned[highest_degree_variable[2]]
 
     def backtrack(self, assignment):
         """
