@@ -236,6 +236,7 @@ class CrosswordCreator():
 
             heapq.heappush(values_heap, (values_ruled_out_for_neighbors, value))
 
+        # Convert the min heap into the ordered list of domain values for return:
         ordered_domain_values = []
         while values_heap:
             ordered_domain_values.append(heapq.heappop(values_heap)[1])
@@ -249,6 +250,8 @@ class CrosswordCreator():
         degree. If there is a tie, any of the tied variables are acceptable
         return values.
         """
+
+        # Create a list of all variables which are unassigned:
         unassigned = []
         for variable in self.crossword.variables:
             if variable not in assignment:
@@ -258,6 +261,9 @@ class CrosswordCreator():
         if unassigned_length == 0:
             return None
 
+        # Create a min heap where each entry is a 3-tuple (remaining values, degree, index into the unassigned variables list)
+        # Note: The reason for using the index in the 3-tuple is to not modify crossword.py per the specification,
+        # else we could add "def __lt__(self, other):" to the Variable class.
         remaining_value_min_heap = []
         for i in range(unassigned_length):
             variable = unassigned[i]
@@ -265,17 +271,19 @@ class CrosswordCreator():
             degree = len(self.crossword.neighbors(variable))
             heapq.heappush(remaining_value_min_heap, (remaining_values, degree, i))
 
-        # Create a list of all the variables which tie for the fewest number of remaining values:
+        # Create a list of all the variables which tie for the fewest number of remaining values based on the heap:
         min_remaining_variables = []
         min_remaining_variables.append(heapq.heappop(remaining_value_min_heap))
         while remaining_value_min_heap:
             potential_tie = heapq.heappop(remaining_value_min_heap)
             if potential_tie[0] == min_remaining_variables[0][0]:
                  min_remaining_variables.append(potential_tie)
+
+        # If there are no ties for the fewest remaining variables, just return the min:
         if len(min_remaining_variables) == 1:
             return unassigned[min_remaining_variables[0][2]]
 
-        # Of the variables tied for the fewuest remaining values, select one tied for the highest degree:
+        # Of the variables tied for the fewuest remaining values, reandomly select one tied for the highest degree:
         highest_degree_variable = None
         for i in range(len(min_remaining_variables)):
             if highest_degree_variable is None:
